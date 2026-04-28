@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "init": "^0.1.2",
+    "sql.js": "^1.14.1"
+  },
+  "name": "files",
+  "version": "1.0.0",
+  "description": "A full-stack web app that schedules your revisions automatically using the **1-4-7 rule**: - **Revision 1** → Study Date + 1 day - **Revision 2** → Study Date + 4 days - **Revision 3** → Study Date + 7 days",
+  "main": "dateUtils.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

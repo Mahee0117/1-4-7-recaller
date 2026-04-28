@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecallLoop — 1-4-7 Revision System</title>
+
+  <!-- Google Fonts: Syne (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── CSS Variables / Design Tokens ───────────────────────────── */
+    :root {
+      --bg:          #0a0a0f;
+      --surface:     #13131c;
+      --surface2:    #1a1a28;
+      --border:      #252538;
+      --accent:      #6c63ff;
+      --accent-soft: #6c63ff22;
+      --accent2:     #ff6584;
+      --accent3:     #43e97b;
+      --warn:        #ffb347;
+      --text:        #e8e8f0;
+      --text-dim:    #7a7a9a;
+      --text-dimmer: #454560;
+      --radius:      14px;
+      --radius-sm:   8px;
+      --shadow:      0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    /* ── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      /* Subtle grid background */
+      background-image:
+        linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────── */
+    .app {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeDown 0.6s ease both;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .logo-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.6rem;
+      background: linear-gradient(135deg, #fff 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .tagline {
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+    .today-badge {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 14px;
+      border-radius: 99px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Rule pills ───────────────────────────────────────────────── */
+    .rule-pills {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 99px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    .pill-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .pill:nth-child(1) .pill-dot { background: var(--accent3); }
+    .pill:nth-child(2) .pill-dot { background: var(--warn); }
+    .pill:nth-child(3) .pill-dot { background: var(--accent2); }
+
+    /* ── Cards ────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title span.icon {
+      font-size: 1.1rem;
+    }
+
+    /* ── Add Topic Form ───────────────────────────────────────────── */
+    .add-card {
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s 0.15s ease both;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: end;
+    }
+    @media (max-width: 580px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .form-group input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .form-group input::placeholder { color: var(--text-dimmer); }
+    /* Date picker color fix */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.6);
+      cursor: pointer;
+    }
+
+    .btn {
+      padding: 11px 22px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.18s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #7c74ff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(108,99,255,0.4);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-sm {
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .btn-danger {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-dimmer);
+    }
+    .btn-danger:hover { color: var(--accent2); }
+
+    /* ── Toast ────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 10px 22px;
+      font-size: 0.85rem;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 999;
+      pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Reminders Section ────────────────────────────────────────── */
+    .reminders-card {
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .reminder-count {
+      margin-left: auto;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 99px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-dim);
+    }
+    .empty-state .big-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* Reminder Item */
+    .reminder-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      transition: all 0.2s;
+      animation: slideIn 0.3s ease both;
+    }
+    .reminder-item:hover { border-color: var(--accent); }
+    .reminder-item.overdue { border-color: rgba(255,101,132,0.3); }
+    .reminder-item.completed {
+      opacity: 0.45;
+      border-style: dashed;
+    }
+
+    .rev-badge {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+    .rev-1 { background: rgba(67,233,123,0.15); color: var(--accent3); }
+    .rev-2 { background: rgba(255,179,71,0.15); color: var(--warn); }
+    .rev-3 { background: rgba(255,101,132,0.15); color: var(--accent2); }
+
+    .reminder-info { flex: 1; min-width: 0; }
+    .reminder-topic {
+      font-weight: 600;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .reminder-meta {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .status-tag {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .tag-due { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .tag-overdue { background: rgba(255,101,132,0.2); color: var(--accent2); }
+    .tag-done { background: rgba(255,255,255,0.06); color: var(--text-dimmer); }
+
+    .reminder-actions { display: flex; gap: 6px; align-items: center; }
+
+    /* ── All Topics Section ───────────────────────────────────────── */
+    .topics-card {
+      animation: fadeUp 0.6s 0.25s ease both;
+    }
+
+    .topic-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      animation: slideIn 0.3s ease both;
+    }
+    .topic-name {
+      flex: 1;
+      font-weight: 500;
+      font-size: 0.9rem;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .topic-date {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+    .topic-revision-dots {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .rev-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      position: relative;
+    }
+    .rev-dot.done { background: var(--accent3); }
+    .rev-dot.today { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .rev-dot.overdue { background: var(--accent2); }
+    .rev-dot.upcoming { background: var(--text-dimmer); }
+
+    /* ── Loading Spinner ──────────────────────────────────────────── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin: 20px auto;
+    }
+
+    /* ── Animations ───────────────────────────────────────────────── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Scrollbar ────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <span class="logo-text">RecallLoop</span>
+    </div>
+    <p class="tagline">Space your revisions. Lock in your learning.</p>
+    <div class="today-badge" id="todayBadge">Loading date...</div>
+  </header>
+
+  <!-- ── Rule explanation ────────────────────────────────────────── -->
+  <div class="rule-pills">
+    <div class="pill"><span class="pill-dot"></span> Revision 1 — Day +1</div>
+    <div class="pill"><span class="pill-dot"></span> Revision 2 — Day +4</div>
+    <div class="pill"><span class="pill-dot"></span> Revision 3 — Day +7</div>
+  </div>
+
+  <!-- ── Add Topic Form ──────────────────────────────────────────── -->
+  <div class="card add-card">
+    <div class="section-title">
+      <span class="icon">➕</span> Add a Topic
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Topic Name</label>
+        <input type="text" id="topicInput" placeholder="e.g. Operating Systems — Paging" />
+      </div>
+      <div class="form-group">
+        <label>Study Date</label>
+        <input type="date" id="dateInput" />
+      </div>
+      <div class="form-group">
+        <label style="visibility:hidden">Add</label>
+        <button class="btn btn-primary" id="addBtn" onclick="addTopic()">Add Topic</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Today's Reminders ───────────────────────────────────────── -->
+  <div class="card reminders-card">
+    <div class="section-title">
+      <span class="icon">🔔</span> Today's Reminders
+      <span class="reminder-count" id="reminderCount">0</span>
+    </div>
+    <div id="remindersContainer">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- ── All Topics ─────────────────────────────────────────────── -->
+  <div class="card topics-card">
+    <div class="section-title">
+      <span class="icon">📚</span> All Topics
+    </div>
+    <div id="topicsContainer">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Toast Notification ─────────────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ── JavaScript ──────────────────────────────────────────────── -->
+<script>
+  // ── Config ──────────────────────────────────────────────────────
+  // Change this if your backend runs on a different port
+  const API_BASE = "http://localhost:3000";
+
+  // ── State ───────────────────────────────────────────────────────
+  let today = "";
+
+  // ── On Load ─────────────────────────────────────────────────────
+  window.addEventListener("DOMContentLoaded", async () => {
+    // Set today's date as the default value in the date picker
+    const now = new Date();
+    const localDate = now.toLocaleDateString("en-CA"); // gives YYYY-MM-DD in local time
+    document.getElementById("dateInput").value = localDate;
+
+    // Load reminders and topics
+    await Promise.all([loadReminders(), loadTopics()]);
+  });
+
+  // ── Utility: Show toast notification ────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  // ── Format date for display (e.g. "Apr 21, 2025") ───────────────
+  function formatDate(dateStr) {
+    // dateStr is YYYY-MM-DD; parse as UTC to avoid timezone drift
+    const d = new Date(dateStr + "T00:00:00Z");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  }
+
+  // ── Load Today's Reminders ──────────────────────────────────────
+  async function loadReminders() {
+    try {
+      const res  = await fetch(`${API_BASE}/reminders`);
+      const data = await res.json();
+      today = data.today;
+
+      // Update the date badge in header
+      document.getElementById("todayBadge").textContent =
+        "Today — " + formatDate(today);
+
+      const container = document.getElementById("remindersContainer");
+      const count     = document.getElementById("reminderCount");
+      count.textContent = data.reminders.length;
+
+      if (data.reminders.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="big-icon">🎉</div>
+            <p>No revisions due today. You're all caught up!</p>
+          </div>`;
+        return;
+      }
+
+      // Render each reminder
+      container.innerHTML = data.reminders.map(r => renderReminder(r)).join("");
+    } catch (err) {
+      document.getElementById("remindersContainer").innerHTML =
+        `<div class="empty-state"><p>⚠️ Could not connect to backend. Is the server running?</p></div>`;
+    }
+  }
+
+  // ── Render a single reminder item ───────────────────────────────
+  function renderReminder(r) {
+    const revLabels = { 1: "Revision 1", 2: "Revision 2", 3: "Revision 3" };
+    const revClass  = `rev-${r.revisionNumber}`;
+    const statusTag = r.status === "overdue"
+      ? `<span class="status-tag tag-overdue">Overdue</span>`
+      : `<span class="status-tag tag-due">Due Today</span>`;
+
+    return `
+      <div class="reminder-item ${r.status}" id="rem-${r.topicId}-${r.revisionNumber}">
+        <div class="rev-badge ${revClass}">${r.revisionNumber}</div>
+        <div class="reminder-info">
+          <div class="reminder-topic">${escHtml(r.topicName)}</div>
+          <div class="reminder-meta">
+            ${revLabels[r.revisionNumber]} &nbsp;·&nbsp;
+            Studied: ${formatDate(r.studyDate)} &nbsp;·&nbsp;
+            Due: ${formatDate(r.revisionDate)}
+          </div>
+        </div>
+        ${statusTag}
+        <div class="reminder-actions">
+          <button class="btn btn-primary btn-sm"
+            onclick="markComplete(${r.topicId}, ${r.revisionNumber})">
+            ✓ Done
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // ── Load All Topics ─────────────────────────────────────────────
+  async function loadTopics() {
+    try {
+      const res  = await fetch(`${API_BASE}/topics`);
+      const data = await res.json();
+      const container = document.getElementById("topicsContainer");
+
+      if (data.topics.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>No topics yet. Add your first one above!</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = data.topics.map(t => renderTopicRow(t)).join("");
+    } catch (err) {
+      // Silently fail — reminders section already shows connectivity error
+    }
+  }
+
+  // ── Render a single topic row ────────────────────────────────────
+  function renderTopicRow(topic) {
+    const { revision1, revision2, revision3 } = topic.revisionDates;
+    const dots = [revision1, revision2, revision3].map((date, i) => {
+      let cls = "upcoming";
+      if (!today) cls = "upcoming";
+      else if (date < today) cls = "done";        // past → treated as done (visual only)
+      else if (date === today) cls = "today";     // due today
+      else cls = "upcoming";                      // future
+      return `<div class="rev-dot ${cls}" title="Revision ${i+1}: ${formatDate(date)}"></div>`;
+    }).join("");
+
+    return `
+      <div class="topic-row" id="topic-${topic.id}">
+        <div class="topic-name">${escHtml(topic.topic_name)}</div>
+        <div class="topic-revision-dots">${dots}</div>
+        <div class="topic-date">${formatDate(topic.study_date)}</div>
+        <button class="btn btn-danger btn-sm" onclick="deleteTopic(${topic.id})">🗑</button>
+      </div>`;
+  }
+
+  // ── Add a Topic ─────────────────────────────────────────────────
+  async function addTopic() {
+    const nameInput = document.getElementById("topicInput");
+    const dateInput = document.getElementById("dateInput");
+    const addBtn    = document.getElementById("addBtn");
+
+    const topic_name = nameInput.value.trim();
+    const study_date = dateInput.value;
+
+    if (!topic_name) { showToast("⚠️  Please enter a topic name."); return; }
+    if (!study_date)  { showToast("⚠️  Please select a study date."); return; }
+
+    addBtn.disabled = true;
+    addBtn.textContent = "Adding...";
+
+    try {
+      const res = await fetch(`${API_BASE}/add-topic`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ topic_name, study_date }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Server error");
+
+      showToast("✅  Topic added! Revisions scheduled.");
+      nameInput.value = "";
+
+      // Reload both sections to reflect new data
+      await Promise.all([loadReminders(), loadTopics()]);
+    } catch (err) {
+      showToast("❌  Error: " + err.message);
+    } finally {
+      addBtn.disabled = false;
+      addBtn.textContent = "Add Topic";
+    }
+  }
+
+  // Allow pressing Enter in the topic field to submit
+  document.getElementById("topicInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addTopic();
+  });
+
+  // ── Mark Revision as Complete ────────────────────────────────────
+  async function markComplete(topicId, revisionNumber) {
+    try {
+      const res = await fetch(`${API_BASE}/complete`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ topic_id: topicId, revision_number: revisionNumber }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      showToast("🎯  Revision marked as done!");
+
+      // Fade out the reminder item before reloading
+      const el = document.getElementById(`rem-${topicId}-${revisionNumber}`);
+      if (el) {
+        el.style.transition = "all 0.4s";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(20px)";
+        setTimeout(() => loadReminders(), 400);
+      } else {
+        await loadReminders();
+      }
+    } catch (err) {
+      showToast("❌  Error: " + err.message);
+    }
+  }
+
+  // ── Delete a Topic ───────────────────────────────────────────────
+  async function deleteTopic(topicId) {
+    if (!confirm("Delete this topic and all its revision data?")) return;
+
+    try {
+      await fetch(`${API_BASE}/topic/${topicId}`, { method: "DELETE" });
+      showToast("🗑  Topic removed.");
+      await Promise.all([loadReminders(), loadTopics()]);
+    } catch (err) {
+      showToast("❌  Could not delete topic.");
+    }
+  }
+
+  // ── Escape HTML to prevent XSS ───────────────────────────────────
+  function escHtml(str) {
+    const div = document.createElement("div");
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>
